@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>恋恋点歌台</title>
+    <style>
+        /* 基础样式 - 手机友好 */
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 100%;
+            margin: 0;
+            padding: 15px;
+            background: #fff5f7; /* 粉白色背景 */
+            color: #333;
+            line-height: 1.5;
+        }
+        .header {
+            position: sticky;
+            top: 0;
+            background: #fff5f7; /* 粉白色背景 */
+            padding: 15px 0;
+            z-index: 10;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 1.8rem;
+            color: #e75480; /* 深粉色标题 */
+            text-align: center;
+        }
+        .search-box {
+            position: relative;
+            margin-bottom: 15px;
+        }
+        #searchInput {
+            width: 100%;
+            padding: 12px 15px 12px 45px;
+            border: 1px solid #ffd6e0; /* 粉色边框 */
+            border-radius: 30px;
+            font-size: 1rem;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #ff85a2; /* 粉色搜索图标 */
+            font-size: 1.2rem;
+        }
+        .category {
+            margin-bottom: 25px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        }
+        h2 {
+            margin: 0;
+            padding: 12px 15px;
+            background: #ffe5eb; /* 浅粉色背景 */
+            font-size: 1.2rem;
+            color: #e75480; /* 深粉色文字 */
+            border-left: 4px solid #e75480; /* 深粉色边框 */
+        }
+        .song-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 15px;
+        }
+        .song-btn {
+            padding: 10px 18px;
+            background: white;
+            border: 1px solid #ffd6e0; /* 粉色边框 */
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            color: #444;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        }
+        .song-btn:hover, .song-btn:active {
+            background: #e75480; /* 深粉色背景 */
+            color: white;
+            border-color: #e75480; /* 深粉色边框 */
+            transform: translateY(-2px);
+        }
+        .copied-message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(231, 84, 128, 0.9); /* 深粉色背景 */
+            color: white;
+            padding: 12px 25px;
+            border-radius: 8px;
+            display: none;
+            z-index: 100;
+            font-size: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .empty-tip {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-size: 1rem;
+            width: 100%;
+            display: none; /* 默认隐藏 */
+        }
+        /* 手机小屏优化 */
+        @media (max-width: 480px) {
+            .song-list {
+                gap: 8px;
+                padding: 12px;
+            }
+            .song-btn {
+                padding: 8px 15px;
+                font-size: 0.9rem;
+            }
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎤 恋恋点歌台</h1>
+        
+        <!-- 搜索框 -->
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input 
+                type="text" 
+                id="searchInput" 
+                placeholder="输入歌名或歌手搜索..." 
+                autocomplete="off"
+            >
+        </div>
+    </div>
+    
+    <!-- 中文流行 -->
+    <div class="category">
+        <h2>中文流行</h2>
+        <div class="song-list" id="chinese-pop"></div>
+    </div>
+    
+    <!-- 古风 -->
+    <div class="category">
+        <h2>古风</h2>
+        <div class="song-list" id="gufeng"></div>
+    </div>
+    
+    <!-- 英文 -->
+    <div class="category">
+        <h2>英文</h2>
+        <div class="song-list" id="english"></div>
+    </div>
+    
+    <!-- 日语 -->
+    <div class="category">
+        <h2>日语</h2>
+        <div class="song-list" id="japanese"></div>
+    </div>
+    
+    <!-- 韩语 -->
+    <div class="category">
+        <h2>韩语</h2>
+        <div class="song-list" id="korean"></div>
+    </div>
+    
+    <!-- 无结果提示 -->
+    <div class="empty-tip" id="emptyTip">没有找到匹配的歌曲</div>
+    
+    <!-- 复制成功提示 -->
+    <div class="copied-message" id="copiedMsg">✓ 已复制到剪贴板</div>
+
+    <script>
+        // ===== 修复后的歌单数据 =====
+        const songs = {
+            "chinese-pop": [
+                "爱丫爱丫 - BY2", 
+                "爱要坦荡荡 - 丁丁",
+                "爱你 - 王心凌",
+                "泡沫 - 邓紫棋",
+                "虫儿飞 - 童声",
+                "光年之外 - 邓紫棋",
+                "恶作剧 - 王蓝茵",
+                "告白气球 - 周杰伦",
+                "红色高跟鞋 - 蔡健雅",
+                "如果的事 - 范玮琪/张韶涵",
+                "明天你好 - 牛奶咖啡",
+                "欧若拉 - 张韶涵",
+                "身骑白马 - 徐佳莹",
+                "小幸运 - 田馥甄",
+                "小情歌 - 吴青峰",
+                "隐形的翅膀 - 张韶涵",
+                "你 - 林依晨",
+                "雨爱 - 杨丞琳",
+                "小半 - 陈粒",
+                "易燃易爆炸 - 陈粒",
+                "遇到 - 方雅贤",
+                "年轮 - 张碧晨",
+                "失眠飞行 - 接个吻，开一枪",
+                "危险派对 - 王以太 / 刘至佳",
+                "我的悲伤是水做的 - 洛天依",
+                "星月神话 - 金莎",
+                "一格格 - 卫兰",
+                "my cookie can - 卫兰",
+                "遇见 - 孙燕姿",
+                "只对你有感觉 - 飞轮海 / 田馥甄",
+                "你啊你啊 - 魏如萱",
+                "万千花蕊慈母悲哀 - Collage",
+                "勾指起誓 - 洛天依",
+                "世末歌者 - 洛天依",
+                "万神纪 - 洛天依",
+                "东京不太热 - 洛天依",
+                "圈圈点点圈圈点点圈圈点点 - 洛天依",
+                "夏天的风 - 温岚",
+                "白鸟过河滩 - 洛天依"
+                // 在此添加更多中文流行歌曲...
+            ],
+            "gufeng": [
+                "牵丝戏 - 银临",
+                "赤伶 - 谭晶",
+                "芒种 - 音阙诗听",
+                "吹梦到西洲 - 黄诗扶/妖扬",
+                "吹灭小山河 - 司南",
+                "半壶纱 - 刘珂矣",
+                "不老梦 - 银临",
+                "不染 - 毛不易",
+                "大鱼 - 周深",
+                "东风志 - Aki阿杰",
+                "冬眠 - 司南",
+                "风萤月 - 洛天依",
+                "浮生未歇 - 音频怪物",
+                "腐草为萤 - 银临",
+                "广寒宫 - 丸子呦",
+                "红昭愿 - 音阙诗听",
+                "狐言 - 洛天依/河图",
+                "锦鲤抄 - 银临/云の泣",
+                "惊鸿一面 - 许嵩/黄龄",
+                "九九八十一 - 乐正绫",
+                "九万字 - 黄诗扶",
+                "凉凉 - 张碧晨/杨宗纬",
+                "流光记 - 银临",
+                "眉间雪 - 晴愔",
+                "梦回还 - 呦猫UNEKO",
+                "明月天涯 - 五音Jw",
+                "孽海记 - 黄诗扶",
+                "芊芊 - 回音哥",
+                "人间不值得 - 黄诗扶",
+                "三寸天堂 - 严艺丹",
+                "白石溪 - 洛天依/乐正绫",  // 修复了这里缺少的逗号
+                "八辈子 - 洛天依",
+                "霜雪千年 - 洛天依/乐正绫",
+                "探清水河 - 传统民歌",
+                "棠梨煎雪 - 银临",
+                "我的一个道姑朋友 - 双笙",
+                "小雨 - 黄诗扶",
+                "烟雨行舟 - 伦桑",
+                "小城谣 - 胡碧乔",
+                "泸沽寻梦 - 银临",
+                "大雪 - 音阙诗听/王梓钰",
+                "咏春 - 七朵组合",
+                "落花情 - 七朵组合",
+                "玉生烟 - 七朵组合",
+                "风月 - 黄龄",
+                "三月雨 - 洛天依",
+                "忆红莲 - 洛天依"
+                // 在此添加更多古风歌曲...
+            ],
+            "english": [
+                "Blinding Lights - The Weeknd",
+                "Dance Monkey - Tones and I",
+                "Shape of You - Ed Sheeran",
+                "Perfect - Ed Sheeran",
+                "Bad Guy - Billie Eilish",
+                "Lovely - Billie Eilish/Khalid"
+                // 在此添加更多英文歌曲...
+            ],
+            "japanese": [
+                "Lemon - 米津玄師",
+                "紅蓮華 - LiSA",
+                "打上花火 - DAOKO",
+                "前前前世 - RADWIMPS",
+                "unravel - TK from 凛として時雨"
+                // 在此添加更多日语歌曲...
+            ],
+            "korean": [
+                "Dynamite - BTS",
+                "How You Like That - BLACKPINK",
+                "Love Scenario - iKON",
+                "Kill This Love - BLACKPINK",
+                "Boy With Luv - BTS"
+                // 在此添加更多韩语歌曲...
+            ]
+        };
+        
+        // ===== 自动生成点歌按钮 =====
+        function initSongButtons() {
+            Object.keys(songs).forEach(category => {
+                const container = document.getElementById(category);
+                container.innerHTML = ''; // 清空容器
+                
+                songs[category].forEach(song => {
+                    const btn = document.createElement('button');
+                    btn.className = 'song-btn';
+                    btn.textContent = song;
+                    btn.dataset.song = song.toLowerCase(); // 用于搜索
+                    btn.onclick = () => copySongName(song);
+                    container.appendChild(btn);
+                });
+            });
+        }
+        
+        // ===== 搜索功能 =====
+        const searchInput = document.getElementById('searchInput');
+        const emptyTip = document.getElementById('emptyTip');
+        
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.trim().toLowerCase();
+            const allButtons = document.querySelectorAll('.song-btn');
+            
+            // 隐藏无结果提示
+            emptyTip.style.display = 'none';
+            
+            if (searchTerm === '') {
+                // 显示所有分类标题和按钮
+                document.querySelectorAll('.category').forEach(el => el.style.display = 'block');
+                allButtons.forEach(btn => btn.style.display = 'inline-block');
+                return;
+            }
+            
+            // 隐藏所有按钮
+            allButtons.forEach(btn => {
+                btn.style.display = 'none';
+            });
+            
+            // 隐藏所有分类标题
+            document.querySelectorAll('.category').forEach(el => {
+                el.style.display = 'none';
+            });
+            
+            // 显示匹配的按钮
+            let hasMatches = false;
+            allButtons.forEach(btn => {
+                if (btn.dataset.song.includes(searchTerm)) {
+                    btn.style.display = 'inline-block';
+                    btn.closest('.category').style.display = 'block';
+                    hasMatches = true;
+                }
+            });
+            
+            // 如果没有匹配项，显示提示
+            if (!hasMatches) {
+                emptyTip.style.display = 'block';
+            }
+        });
+        
+        // ===== 复制功能核心代码 =====
+        function copySongName(songName) {
+            navigator.clipboard.writeText(songName).then(() => {
+                const msg = document.getElementById('copiedMsg');
+                msg.style.display = 'block';
+                setTimeout(() => msg.style.display = 'none', 1500);
+            });
+        }
+        
+        // 页面加载时初始化
+        window.onload = initSongButtons;
+        
+        // 页面加载后聚焦搜索框
+        window.addEventListener('load', () => {
+            document.getElementById('searchInput').focus();
+        });
+    </script>
+</body>
+</html>
